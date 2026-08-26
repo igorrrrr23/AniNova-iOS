@@ -1,6 +1,20 @@
 import Foundation
 
-struct WatchProgress: Codable, Identifiable, Hashable { let releaseID: Int; let episodePosition: Int; let sourceID: Int; let seconds: Double; let duration: Double; let updatedAt: Date; var id: String { "\(releaseID)_\(episodePosition)_\(sourceID)" } }
+struct WatchProgress: Codable, Identifiable, Hashable {
+    let releaseID: Int
+    let episodePosition: Int
+    let sourceID: Int
+    let seconds: Double
+    let duration: Double
+    let updatedAt: Date
+    
+    var id: String { "\(releaseID)_\(episodePosition)_\(sourceID)" }
+    
+    var percentage: Double {
+        guard duration > 0 else { return 0 }
+        return seconds / duration
+    }
+}
 
 final class ProgressStore {
     private let key = "watch.progress.v1"
