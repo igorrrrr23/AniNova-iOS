@@ -288,17 +288,18 @@ final class PlayerCoordinatorViewController: UIViewController, AVPlayerViewContr
         coordinator?.play(url: url, releaseID: releaseID, episode: episode, store: store, repository: repository)
         playerVC.player = coordinator?.player
 
-        thumbnailGenerator = coordinator?.player.currentItem?.asset
-            .flatMap { $0 as? AVURLAsset }
-            .map { AVAssetImageGenerator(asset: $0) }
-        thumbnailGenerator?.appliesPreferredTrackTransform = true
-        thumbnailGenerator?.maximumSize = CGSize(width: 160, height: 90)
-        thumbnailGenerator?.requestsTimeOffsetsOutsideBounds = false
+        if let asset = coordinator?.player.currentItem?.asset as? AVURLAsset {
+            thumbnailGenerator = AVAssetImageGenerator(asset: asset)
+            thumbnailGenerator?.appliesPreferredTrackTransform = true
+            thumbnailGenerator?.maximumSize = CGSize(width: 160, height: 90)
+        }
 
         timeObserver = coordinator?.player.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 1, preferredTimescale: 600), queue: .main
         ) { [weak self] _ in
-            self?.coordinator?.persist()
+            Task { @MainActor in
+                self?.coordinator?.persist()
+            }
         }
 
         setupKeyboardShortcuts()
@@ -459,7 +460,7 @@ final class ThumbnailPreviewView: UIView {
 
         player.play()
 
-        Task { @MainActor in
+        Task {
             try? await repository.addToHistory(releaseID: releaseID, sourceID: episode.source?.id ?? 0, position: episode.position)
         }
     }
@@ -483,7 +484,7 @@ final class ThumbnailPreviewView: UIView {
             let seconds = player.currentTime().seconds
             let duration = item.duration.seconds
             if seconds.isFinite, duration.isFinite, duration > 10, seconds > duration * 0.9 {
-                Task { @MainActor in
+                Task {
                     try? await ctx.repository.markEpisode(releaseID: ctx.releaseID, sourceID: ctx.episode.source?.id ?? 0, position: ctx.episode.position, watched: true)
                 }
             }
