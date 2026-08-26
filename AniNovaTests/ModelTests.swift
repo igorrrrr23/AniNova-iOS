@@ -18,7 +18,7 @@ final class ModelTests: XCTestCase {
 
     func testProgressUsesStableCompositeIdentity() {
         let progress = WatchProgress(releaseID: 10, episodePosition: 3, sourceID: 7, seconds: 20, duration: 100, updatedAt: .now)
-        XCTAssertEqual(progress.id, "10-3-7")
+        XCTAssertEqual(progress.id, "10_3_7")
     }
 
     func testProgressPercentage() {
