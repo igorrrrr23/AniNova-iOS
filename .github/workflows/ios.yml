@@ -17,6 +17,19 @@ jobs:
         run: xcodegen generate
       - name: Build for iOS Simulator
         run: xcodebuild -project AniNova.xcodeproj -scheme AniNova -sdk iphonesimulator -configuration Debug -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO
+      - name: Diagnose app bundle
+        if: always()
+        run: |
+          APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path '*/Debug-iphonesimulator/AniNova.app' -maxdepth 9 -type d -print -quit 2>/dev/null)
+          echo "APP_PATH=$APP_PATH"
+          if [ -z "$APP_PATH" ]; then echo "App bundle not found"; exit 0; fi
+          echo "=== Info.plist CFBundleExecutable ==="
+          /usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$APP_PATH/Info.plist" || echo "(key missing)"
+          echo "=== Info.plist full ==="
+          /usr/libexec/PlistBuddy -c "Print" "$APP_PATH/Info.plist"
+          echo "=== Executable ==="
+          ls -l "$APP_PATH/AniNova" || echo "(no AniNova executable)"
+          test -f "$APP_PATH/AniNova" && echo "Executable exists" || echo "EXECUTABLE MISSING"
       - name: Run unit tests
         run: xcodebuild -project AniNova.xcodeproj -scheme AniNova -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16' test CODE_SIGNING_ALLOWED=NO
       - name: Package unsigned simulator app
