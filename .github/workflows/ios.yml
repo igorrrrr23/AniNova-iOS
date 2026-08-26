@@ -1,0 +1,34 @@
+name: iOS CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test-and-build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install project generator
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        run: xcodegen generate
+      - name: Build for iOS Simulator
+        run: xcodebuild -project AniNova.xcodeproj -scheme AniNova -sdk iphonesimulator -configuration Debug -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO
+      - name: Run unit tests
+        run: xcodebuild -project AniNova.xcodeproj -scheme AniNova -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16' test CODE_SIGNING_ALLOWED=NO
+      - name: Package unsigned simulator app
+        if: always()
+        run: |
+          mkdir -p artifacts
+          find ~/Library/Developer/Xcode/DerivedData -path '*Build/Products/Debug-iphonesimulator/AniNova.app' -maxdepth 9 -type d -print -quit | xargs -I{} ditto -c -k --sequesterRsrc --keepParent {} artifacts/AniNova-simulator.zip
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AniNova-simulator-build
+          path: artifacts
+          if-no-files-found: warn
+
