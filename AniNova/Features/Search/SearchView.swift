@@ -84,7 +84,7 @@ struct SearchView: View {
             }
             .navigationTitle("Поиск")
             .searchable(text: $model.query, prompt: "Аниме, профиль или коллекция")
-            .onChange(of: model.query) { _ in model.changed() }
+            .onChange(of: model.query) { _, _ in model.changed() }
             .navigationDestination(for: Release.self) { ReleaseDetailView(release: $0) }
         }
     }

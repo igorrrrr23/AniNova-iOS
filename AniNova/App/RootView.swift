@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject private var container: AppContainer
+
     var body: some View {
         Group {
             switch container.auth.state {
@@ -13,7 +14,14 @@ struct RootView: View {
         .preferredColorScheme(colorScheme)
         .task { await container.auth.restore() }
     }
-    private var colorScheme: ColorScheme? { switch container.appearance { case "dark", "amoled": return .dark; case "light": return .light; default: return nil } }
+
+    private var colorScheme: ColorScheme? {
+        switch container.appearance {
+        case "dark", "amoled": return .dark
+        case "light": return .light
+        default: return nil
+        }
+    }
 }
 
 struct MainTabView: View {
@@ -28,4 +36,3 @@ struct MainTabView: View {
         .tint(.indigo)
     }
 }
-
