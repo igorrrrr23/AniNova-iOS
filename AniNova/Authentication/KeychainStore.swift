@@ -18,7 +18,7 @@ final class KeychainStore {
     func delete() { SecItemDelete([kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: account] as CFDictionary) }
 }
 
-@MainActor final class AuthManager: ObservableObject, TokenProviding {
+@MainActor final class AuthManager: ObservableObject {
     enum State { case restoring, unauthenticated, authenticated(Profile) }
     @Published private(set) var state: State = .restoring
     private let keychain: KeychainStore

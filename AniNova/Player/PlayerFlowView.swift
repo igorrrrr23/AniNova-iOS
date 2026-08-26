@@ -402,8 +402,6 @@ final class PlayerCoordinatorViewController: UIViewController, AVPlayerViewContr
             player.removeTimeObserver(obs)
         }
     }
-
-    func playerViewControllerShouldDismiss(_ playerViewController: AVPlayerViewController) -> Bool { true }
 }
 
 final class ThumbnailPreviewView: UIView {
