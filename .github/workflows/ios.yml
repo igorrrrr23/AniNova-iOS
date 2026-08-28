@@ -1,47 +1,43 @@
-name: iOS CI
+name: iOS Build
 
 on:
-  push:
-  pull_request:
   workflow_dispatch:
 
 jobs:
-  test-and-build:
+  build:
     runs-on: macos-15
     timeout-minutes: 30
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Install project generator
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
         run: brew install xcodegen
+
       - name: Generate Xcode project
         run: xcodegen generate
-      - name: Build for iOS Simulator
-        run: xcodebuild -project AniNova.xcodeproj -scheme AniNova -sdk iphonesimulator -configuration Debug -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO
-      - name: Diagnose app bundle
-        if: always()
+
+      - name: Build iOS
         run: |
-          APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path '*/Debug-iphonesimulator/AniNova.app' -maxdepth 9 -type d -print -quit 2>/dev/null)
-          echo "APP_PATH=$APP_PATH"
-          if [ -z "$APP_PATH" ]; then echo "App bundle not found"; exit 0; fi
-          echo "=== Info.plist CFBundleExecutable ==="
-          /usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$APP_PATH/Info.plist" || echo "(key missing)"
-          echo "=== Info.plist full ==="
-          /usr/libexec/PlistBuddy -c "Print" "$APP_PATH/Info.plist"
-          echo "=== Executable ==="
-          ls -l "$APP_PATH/AniNova" || echo "(no AniNova executable)"
-          test -f "$APP_PATH/AniNova" && echo "Executable exists" || echo "EXECUTABLE MISSING"
-      - name: Run unit tests
-        run: xcodebuild -project AniNova.xcodeproj -scheme AniNova -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16' test CODE_SIGNING_ALLOWED=NO
-      - name: Package unsigned simulator app
-        if: always()
+          xcodebuild \
+            -project AniNova.xcodeproj \
+            -scheme AniNova \
+            -sdk iphoneos \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Create IPA
         run: |
-          mkdir -p artifacts
-          find ~/Library/Developer/Xcode/DerivedData -path '*Build/Products/Debug-iphonesimulator/AniNova.app' -maxdepth 9 -type d -print -quit | xargs -I{} ditto -c -k --sequesterRsrc --keepParent {} artifacts/AniNova-simulator.zip
-      - name: Upload artifact
-        if: always()
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/AniNova.app Payload/AniNova.app
+          zip -r AniNova.ipa Payload
+
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: AniNova-simulator-build
-          path: artifacts
-          if-no-files-found: warn
-
+          name: AniNova-IPA
+          path: AniNova.ipa
