@@ -1,4 +1,4 @@
-name: iOS Build
+name: AniNova iOS
 
 on:
   workflow_dispatch:
@@ -12,29 +12,44 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      - name: Generate Xcode project
+      - name: Generate project
         run: xcodegen generate
 
-      - name: Build iOS
+      - name: Build
         run: |
           xcodebuild \
             -project AniNova.xcodeproj \
             -scheme AniNova \
-            -sdk iphoneos \
             -configuration Release \
+            -sdk iphoneos \
             -destination 'generic/platform=iOS' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO
+            CODE_SIGNING_REQUIRED=NO \
+            DEVELOPMENT_TEAM=
+
+      - name: Check app
+        run: |
+          ls -lah build/Build/Products/Release-iphoneos/
+          ls -lah build/Build/Products/Release-iphoneos/AniNova.app
 
       - name: Create IPA
         run: |
-          mkdir -p Payload
-          cp -R build/Build/Products/Release-iphoneos/AniNova.app Payload/AniNova.app
-          zip -r AniNova.ipa Payload
+          rm -rf Payload AniNova.ipa
+          mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/AniNova.app Payload/
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent Payload AniNova.ipa
+
+      - name: Check IPA
+        run: |
+          unzip -l AniNova.ipa | head -30
+          file AniNova.ipa
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
